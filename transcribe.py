@@ -1,7 +1,7 @@
 import assemblyai as aai
 from group_into_captions import group_words_into_chunks
 
-aai.settings.api_key = "Enter Your Assembly AI API here"
+aai.settings.api_key = "ENTER_YOUR_ASSEMBLY_AI_API_HERE"
 
 AUDIO_FILE_PATH = "path/to/your/video.mp4"
 

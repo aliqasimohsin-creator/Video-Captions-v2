@@ -1,4 +1,4 @@
-# Video Captioning Tool
+# Video Captioning - v2
 
 A drag-and-drop tool that takes a video, transcribes the speech (any language,
 auto-detected), romanizes non-Latin script (e.g. Hindi/Urdu -> Hinglish/Roman
@@ -42,14 +42,14 @@ cd ..
 ## 3. Add your API keys
 
 Open both **`transcribe.py`** and **`run_pipeline.py`** and replace the
-`"Enter Your API here"` placeholders with your own keys:
+placeholders with your own keys:
 
 ```python
 # AssemblyAI key — used for transcription (in both files)
-aai.settings.api_key = "Enter Your API here"
+aai.settings.api_key = "ENTER_YOUR_ASSEMBLY_AI_API_HERE"
 
 # Gemini key — used for romanization (run_pipeline.py only)
-gemini_client = genai.Client(api_key="Enter Your API here")
+gemini_client = genai.Client(api_key="ENTER_YOUR_GEMINI_AI_API_HERE")
 ```
 
 - AssemblyAI key: sign up and grab it from your dashboard at

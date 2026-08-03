@@ -21,6 +21,7 @@ export type CaptionStyleConfig = {
   strokeEnabled: boolean;
   background: BackgroundStyle;
   animation: AnimationStyle;
+  popIntensity?: number; // 0-100, how dramatic the "pop" entrance is; only used when animation is "pop"
 };
 
 type CaptionProps = {
@@ -48,14 +49,17 @@ export const Caption: React.FC<CaptionProps> = ({ text, start, words, position, 
   let animatedStyle: React.CSSProperties = {};
 
   if (style.animation === 'pop') {
-    // Softer, more heavily-damped spring than a snappy motion-graphics
-    // pop: low stiffness + higher damping means it eases into place over
-    // more frames instead of slamming to scale 1 and bouncing. Scaling
-    // from 0.85 (not 0) and fading opacity in over the first few frames
-    // avoids the "materializing out of nowhere" jump-cut feel.
-    const rawScale = spring({ frame, fps, config: { damping: 18, stiffness: 90, mass: 0.7 } });
-    const scale = 0.85 + rawScale * 0.15;
-    const opacity = interpolate(frame, [0, 6], [0, 1], { extrapolateRight: 'clamp' });
+    // Underdamped on purpose: it overshoots past scale 1 and settles back, which is
+    // what actually reads as a "pop" to the eye. A critically-damped spring just eases
+    // up smoothly with no bounce, which looks like the text merely appearing.
+    const rawScale = spring({ frame, fps, config: { damping: 10, stiffness: 200, mass: 0.5 } });
+    // popIntensity 0-100 controls how small the starting scale is (0 = barely any pop,
+    // 100 = starts tiny and rockets up). Matches the same formula used for the live
+    // timeline preview so what you see while editing matches the final render.
+    const intensity = style.popIntensity ?? 65;
+    const startScale = 1 - (intensity / 100) * 0.9;
+    const scale = startScale + rawScale * (1 - startScale);
+    const opacity = interpolate(frame, [0, 4], [0, 1], { extrapolateRight: 'clamp' });
     animatedStyle = { transform: `scale(${scale})`, opacity };
   } else if (style.animation === 'fade') {
     const opacity = interpolate(frame, [0, 8], [0, 1], { extrapolateRight: 'clamp' });
