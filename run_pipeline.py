@@ -1,5 +1,6 @@
 import re
 import subprocess
+import sys
 import json
 import shutil
 import time
@@ -230,11 +231,19 @@ def render_video(props_path: Path, output_filename: str = "output.mp4", bitrate:
     if bitrate:
         render_args.append(f"--video-bitrate={round(bitrate / 1000)}K")
 
+    # shell=True with a list of args only works correctly on Windows (where it joins
+    # the list into a single command line and runs it via cmd.exe, which is also what
+    # resolves the "npx" -> "npx.cmd" shim). On POSIX, shell=True with a list instead
+    # treats args[0] as the entire shell command and the rest as arguments to the
+    # shell itself, silently dropping them — so npx would run with no arguments at
+    # all. A real executable like npx on POSIX doesn't need shell interpretation.
+    use_shell = sys.platform == "win32"
+
     with open(log_path, "w") as log_file:
         process = subprocess.Popen(
             render_args,
             cwd=RENDERER_DIR,
-            shell=True,
+            shell=use_shell,
             stdout=log_file,
             stderr=subprocess.STDOUT,
         )
