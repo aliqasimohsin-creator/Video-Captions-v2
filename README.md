@@ -132,7 +132,8 @@ Rendered output ends up in `renderer/out/`.
   non-Latin script text; the pipeline automatically falls back to the
   original transcript text if Gemini's response doesn't line up.
 - **`ffprobe` not found** — the pipeline first looks for a system-installed
-  `ffprobe` on your `PATH`; if missing, it falls back to the copy bundled
-  with `@remotion/compositor-win32-x64-msvc` in `renderer/node_modules`
-  (Windows only — on macOS/Linux, install `ffmpeg`/`ffprobe` yourself, e.g.
-  via `brew install ffmpeg` or your package manager).
+  `ffprobe` on your `PATH`; if missing, it falls back to the copy already
+  bundled with Remotion's renderer in `renderer/node_modules/@remotion/`
+  (Windows, macOS Intel/Apple Silicon, and Linux x64/arm64 are all covered
+  automatically by `npm install`, so this should just work without
+  installing `ffmpeg` yourself on any platform).

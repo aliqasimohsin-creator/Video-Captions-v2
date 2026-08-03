@@ -1,3 +1,4 @@
+import platform
 import re
 import subprocess
 import sys
@@ -18,9 +19,26 @@ RENDERER_DIR = Path("renderer")
 PUBLIC_DIR = RENDERER_DIR / "public"
 WORK_DIR = Path("work")
 
-FFPROBE_PATH = shutil.which("ffprobe") or str(
-    RENDERER_DIR / "node_modules" / "@remotion" / "compositor-win32-x64-msvc" / "ffprobe.exe"
-)
+
+def _bundled_ffprobe_path() -> str:
+    # Remotion's renderer ships a real ffmpeg/ffprobe build as a per-platform optional
+    # npm dependency (@remotion/compositor-<platform>), so `npm install` in renderer/
+    # already pulled down the right one for this machine — no system ffmpeg required.
+    system = platform.system()
+    machine = platform.machine().lower()
+    is_arm = machine in ("arm64", "aarch64")
+
+    if system == "Windows":
+        package, binary = "compositor-win32-x64-msvc", "ffprobe.exe"
+    elif system == "Darwin":
+        package, binary = ("compositor-darwin-arm64" if is_arm else "compositor-darwin-x64"), "ffprobe"
+    else:
+        package, binary = ("compositor-linux-arm64-gnu" if is_arm else "compositor-linux-x64-gnu"), "ffprobe"
+
+    return str(RENDERER_DIR / "node_modules" / "@remotion" / package / binary)
+
+
+FFPROBE_PATH = shutil.which("ffprobe") or _bundled_ffprobe_path()
 
 
 def make_local_working_copy(video_path: str) -> str:
