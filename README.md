@@ -2,11 +2,35 @@
 
 A drag-and-drop tool that takes a video, transcribes the speech (any language,
 auto-detected), romanizes non-Latin script (e.g. Hindi/Urdu -> Hinglish/Roman
-Urdu), groups words into short caption chunks, and renders the video back out
-with styled, animated captions burned in using Remotion.
+Urdu), lets you edit and style the captions in a full visual timeline, and
+renders the video back out with styled, animated captions burned in using
+Remotion — preserving the original video's resolution, frame rate, and
+bitrate.
 
 Pipeline: **Gradio UI -> AssemblyAI (transcription) -> Gemini (romanization)
 -> Remotion (rendering)**.
+
+## What's new in v2
+
+- **Visual timeline editor** — a professional-editor-style timeline with
+  separate video (thumbnail filmstrip), audio (waveform), and captions
+  tracks, all on a shared, zoomable time axis. Drag a caption to move it,
+  drag its edges to resize it, click its text to open a full editor popup,
+  or drag on empty track space to create a new caption.
+- **Live style preview** — font, size, text/outline color, background style,
+  and entrance animation (pop/fade/slide, with a pop-intensity slider) all
+  update instantly in both a compact preview panel and directly on the
+  timeline's video, matching what the final render will look like.
+- **Persistence** — style preferences and your in-progress editing session
+  survive a page refresh (saved to the browser's `localStorage`).
+- **Real render progress** — a live progress bar tracks actual render
+  completion (frame-by-frame), not just a spinner.
+- **Original quality preserved** — the rendered output keeps the source
+  video's frame rate and bitrate, and its resolution (cropped to your chosen
+  orientation using the largest region that fits the source, so a
+  high-resolution source doesn't get downscaled to a fixed preset).
+- **Start Over** — reset the whole session and pick a new video without
+  restarting the app.
 
 ## Prerequisites
 
@@ -66,20 +90,35 @@ python app.py
 ```
 
 This launches a local Gradio web UI (the terminal will print a URL like
-`http://127.0.0.1:7860`). Open it in your browser, upload a video, choose
-your caption style, and click **Generate Captions**.
+`http://127.0.0.1:7860`). Open it in your browser:
+
+1. Upload a video and click **1. Transcribe**.
+2. Edit captions and drag/resize them on the timeline, tweak the caption
+   style (font, colors, animation, position) using the live preview to
+   guide you.
+3. Click **2. Render Video**. You can tweak the style and click render
+   again as many times as you like without re-transcribing.
 
 ## How it works under the hood
 
-1. **`app.py`** — the Gradio UI (upload video, style controls, live preview).
-2. **`run_pipeline.py`** — the pipeline: copies your video locally, sends it
+1. **`app.py`** — the Gradio UI: upload/transcribe/render controls, style
+   controls with a live preview, and the timeline editor's HTML/state wiring
+   (including `localStorage`-based persistence).
+2. **`static/timeline/`** — the timeline editor's client-side code
+   (`timeline.js`/`timeline.css`), built on a vendored `wavesurfer.js` for
+   the waveform track, plus custom drag/resize logic for the captions track
+   and thumbnail extraction for the video track.
+3. **`run_pipeline.py`** — the pipeline: copies your video locally, sends it
    to AssemblyAI for transcription, uses Gemini to romanize any non-Latin
-   script words, groups words into caption chunks, writes them to
-   `renderer/captions.json`, then calls Remotion to render the final video.
-3. **`group_into_captions.py`** — groups word-level timestamps into small
+   script words, groups words into caption chunks, probes the source
+   video's resolution/fps/bitrate with `ffprobe`, writes everything to
+   `renderer/captions.json`, then calls Remotion to render the final video
+   (reporting live per-frame progress back to the UI).
+4. **`group_into_captions.py`** — groups word-level timestamps into small
    multi-word caption chunks.
-4. **`renderer/`** — a Remotion project that reads `captions.json` and
-   burns the styled captions into the video (`npx remotion render`).
+5. **`renderer/`** — a Remotion project that reads `captions.json` and
+   burns the styled, animated captions into the video at the source's
+   original resolution/fps/bitrate (`npx remotion render`).
 
 Rendered output ends up in `renderer/out/`.
 
@@ -92,3 +131,8 @@ Rendered output ends up in `renderer/out/`.
 - **Romanization step fails / mismatched word count** — this only affects
   non-Latin script text; the pipeline automatically falls back to the
   original transcript text if Gemini's response doesn't line up.
+- **`ffprobe` not found** — the pipeline first looks for a system-installed
+  `ffprobe` on your `PATH`; if missing, it falls back to the copy bundled
+  with `@remotion/compositor-win32-x64-msvc` in `renderer/node_modules`
+  (Windows only — on macOS/Linux, install `ffmpeg`/`ffprobe` yourself, e.g.
+  via `brew install ffmpeg` or your package manager).
